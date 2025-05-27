@@ -29,28 +29,30 @@ public class ConsultaService {
 
     public List<ConsultaDTO> listarTodos() {
         List<Consulta> consultas = consultaRepository.findAll();
-        return consultas.stream().map(ConsultaDTO::new).collect(Collectors.toList());
+        return consultas.stream()
+                .map(consulta -> new ConsultaDTO(consulta))
+                .collect(Collectors.toList());
     }
 
     public ConsultaDTO buscarPorId(Long id) {
         return consultaRepository.findById(id)
-                .map(ConsultaDTO::new)
-                .orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+                .map(consulta -> new ConsultaDTO(consulta))
+                .orElseThrow(() -> new RuntimeException("Consulta com ID " + id + " não encontrada."));
     }
 
     public ConsultaDTO salvar(ConsultaDTO dto) {
         Medico medico = medicoRepository.findById(dto.getMedicoId())
-                .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Médico com ID " + dto.getMedicoId() + " não encontrado."));
 
         Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-                .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Paciente com ID " + dto.getPacienteId() + " não encontrado."));
 
         LocalDateTime inicio = dto.getDataHora();
         LocalDateTime fim = inicio.plusMinutes(30);
 
-        boolean ocupado = consultaRepository.existsByMedicoIdAndDataHoraBetween(medico.getId(), inicio, fim);
-        if (ocupado) {
-            throw new RuntimeException("O médico já está ocupado nesse horário.");
+        boolean medicoOcupado = consultaRepository.existsByMedicoIdAndDataHoraBetween(medico.getId(), inicio, fim);
+        if (medicoOcupado) {
+            throw new RuntimeException("Médico já possui consulta agendada entre " + inicio + " e " + fim + ".");
         }
 
         Consulta consulta = new Consulta();
@@ -64,6 +66,9 @@ public class ConsultaService {
     }
 
     public void deletar(Long id) {
+        if (!consultaRepository.existsById(id)) {
+            throw new RuntimeException("Consulta com ID " + id + " não encontrada para exclusão.");
+        }
         consultaRepository.deleteById(id);
     }
 }
