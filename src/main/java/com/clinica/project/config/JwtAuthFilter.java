@@ -32,6 +32,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
+
+        // Libera os endpoints públicos
+        String path = request.getServletPath();
+        if (path.startsWith("/auth")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -40,7 +49,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String email = jwtService.extractEmail(token); // 🔥 Certifique que o método se chama extractUsername()
+        String email = jwtService.extractEmail(token); 
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
